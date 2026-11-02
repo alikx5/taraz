@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تراز - اپلیکیشن مدیریت دارایی شخصی</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    },
+                    fontFamily: {
+                        vazir: ['Vazirmatn', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts - Vazirmatn -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Glassmorphism utility */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .light .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        /* Number Animation Transition */
+        .stat-value {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen transition-colors duration-300 light:bg-slate-100 light:text-slate-900">
+
+    <!-- App Shell -->
+    <div class="flex flex-col min-h-screen">
+
+        <!-- Top Header Navigation -->
+        <header class="border-b border-slate-800 light:border-slate-200 bg-slate-900/80 light:bg-white/80 sticky top-0 z-30 backdrop-blur-md">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                
+                <!-- Brand Logo & Title -->
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/20 font-black text-xl">
+                        ت
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <h1 class="text-xl font-bold tracking-tight text-white light:text-slate-900">تـراز</h1>
+                            <span class="text-[10px] bg-brand-500/20 text-brand-400 light:text-brand-700 px-2 py-0.5 rounded-full font-medium">نسخه شخصی</span>
+                        </div>
+                        <p class="text-xs text-slate-400 light:text-slate-500 hidden sm:block">سامانه هوشمند مدیریت و تحلیل دارایی‌های مالی</p>
+                    </div>
+                </div>
+
+                <!-- Right Side Tools: Exchange Rate, Quick Add, Theme Toggle -->
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    
+                    <!-- Dollar Exchange Rate Badge / Button -->
+                    <button onclick="openExchangeRateModal()" class="flex items-center space-x-2 space-x-reverse px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 light:bg-slate-100 light:hover:bg-slate-200 text-xs border border-slate-700 light:border-slate-300 transition-all">
+                        <i class="fa-solid fa-dollar-sign text-emerald-400"></i>
+                        <span>نرخ دلار:</span>
+                        <span id="usdRateBadge" class="font-bold text-slate-200 light:text-slate-800">۷۰,۰۰۰ تومان</span>
+                        <i class="fa-solid fa-pen text-[10px] opacity-60"></i>
+                    </button>
+
+                    <!-- Add Asset Quick Button -->
+                    <button onclick="openAssetModal()" class="bg-brand-600 hover:bg-brand-500 text-white font-medium px-3.5 py-1.5 rounded-lg text-sm flex items-center space-x-1.5 space-x-reverse shadow-md shadow-brand-600/30 transition-all active:scale-95">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span class="hidden sm:inline">دارایی جدید</span>
+                    </button>
+
+                    <!-- Dark/Light Theme Toggle -->
+                    <button onclick="toggleTheme()" class="w-9 h-9 rounded-lg bg-slate-800 light:bg-slate-200 text-slate-300 light:text-slate-700 hover:text-white flex items-center justify-center transition-colors">
+                        <i id="themeIcon" class="fa-solid fa-moon"></i>
+                    </button>
+                </div>
+
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+            <!-- Portfolios Navigation & Controls Bar -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 light:bg-white p-2.5 rounded-2xl border border-slate-800/80 light:border-slate-200 shadow-sm">
+                
+                <!-- Portfolio Filter Pills -->
+                <div class="flex items-center space-x-2 space-x-reverse overflow-x-auto pb-1 sm:pb-0 scrollbar-none" id="portfolioTabsContainer">
+                    <!-- Dynamic Portfolio Tabs Rendered via JS -->
+                </div>
+
+                <!-- Add Portfolio Action -->
+                <button onclick="openPortfolioModal()" class="text-xs text-brand-400 light:text-brand-600 hover:text-brand-300 flex items-center space-x-1 space-x-reverse px-3 py-1.5 rounded-xl hover:bg-brand-500/10 transition-all whitespace-nowrap self-end sm:self-auto">
+                    <i class="fa-solid fa-folder-plus"></i>
+                    <span>ایجاد پورتفوی جدید</span>
+                </button>
+
+            </div>
+
+            <!-- Dashboard Metric Cards (4 Cards) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <!-- Card 1: Total Asset Net Worth -->
+                <div class="glass-card rounded-2xl p-4 shadow-sm relative overflow-hidden group">
+                    <div class="absolute -left-4 -bottom-4 w-20 h-20 bg-brand-500/10 rounded-full blur-xl group-hover:bg-brand-500/20 transition-all"></div>
+                    <div class="flex items-center justify-between text-slate-400 light:text-slate-500 text-xs font-medium mb-2">
+                        <span>ارزش کل دارایی‌ها</span>
+                        <div class="w-8 h-8 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center">
+                            <i class="fa-solid fa-wallet"></i>
+                        </div>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-black text-slate-100 light:text-slate-900 stat-value" id="statTotalNetWorth">
+                        ۰ <span class="text-xs font-normal text-slate-400">تومان</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 light:text-slate-500 mt-2 flex items-center space-x-1 space-x-reverse">
+                        <span>مجموع ارزش جاری به تومان</span>
+                    </div>
+                </div>
+
+                <!-- Card 2: Total Net Profit/Loss -->
+                <div class="glass-card rounded-2xl p-4 shadow-sm relative overflow-hidden group">
+                    <div class="flex items-center justify-between text-slate-400 light:text-slate-500 text-xs font-medium mb-2">
+                        <span>سود / زیان کل</span>
+                        <div id="pnlIconBg" class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                            <i id="pnlIcon" class="fa-solid fa-chart-line"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-baseline space-x-2 space-x-reverse">
+                        <div class="text-xl sm:text-2xl font-black text-slate-100 light:text-slate-900 stat-value" id="statTotalPnL">
+                            ۰ <span class="text-xs font-normal text-slate-400">تومان</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 flex items-center">
+                        <span id="statPnLBadge" class="inline-flex items-center space-x-1 space-x-reverse px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-400">
+                            <span>0%</span>
+                        </span>
+                        <span class="text-[11px] text-slate-400 light:text-slate-500 mr-2">بازدهی کل سرمایه‌گذاری</span>
+                    </div>
+                </div>
+
+                <!-- Card 3: Best Performing Asset -->
+                <div class="glass-card rounded-2xl p-4 shadow-sm relative overflow-hidden group">
+                    <div class="flex items-center justify-between text-slate-400 light:text-slate-500 text-xs font-medium mb-2">
+                        <span>دارایی با بالاترین سود</span>
+                        <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                    </div>
+                    <div class="text-lg font-bold text-slate-100 light:text-slate-900 truncate" id="statTopAssetName">
+                        —
+                    </div>
+                    <div class="text-xs text-emerald-400 font-semibold mt-2 flex items-center justify-between" id="statTopAssetReturn">
+                        <span>بازدهی:</span>
+                        <span>—</span>
+                    </div>
+                </div>
+
+                <!-- Card 4: Total Asset Count & Portfolio breakdown -->
+                <div class="glass-card rounded-2xl p-4 shadow-sm relative overflow-hidden group">
+                    <div class="flex items-center justify-between text-slate-400 light:text-slate-500 text-xs font-medium mb-2">
+                        <span>تعداد قلم دارایی</span>
+                        <div class="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </div>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-black text-slate-100 light:text-slate-900 stat-value" id="statAssetCount">
+                        ۰
+                    </div>
+                    <div class="text-[11px] text-slate-400 light:text-slate-500 mt-2 flex items-center justify-between">
+                        <span>تعداد پورتفوهای فعال:</span>
+                        <span id="statPortfolioCount" class="font-bold text-slate-200 light:text-slate-700">۰</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Charts Section (Donut Asset Allocation & Bar Portfolio Comparison) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Chart 1: Asset Allocation Donut Chart -->
+                <div class="lg:col-span-5 glass-card rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-sm font-bold text-slate-200 light:text-slate-800 flex items-center space-x-2 space-x-reverse">
+                            <i class="fa-solid fa-chart-pie text-brand-400"></i>
+                            <span>توزیع دارایی‌ها بر اساس کلاس</span>
+                        </h2>
+                    </div>
+                    <div class="relative flex-1 min-h-[240px] flex items-center justify-center">
+                        <canvas id="allocationChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Portfolio Comparison Bar Chart -->
+                <div class="lg:col-span-7 glass-card rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-sm font-bold text-slate-200 light:text-slate-800 flex items-center space-x-2 space-x-reverse">
+                            <i class="fa-solid fa-chart-simple text-brand-400"></i>
+                            <span>مقایسه ارزش و سود پورتفوها</span>
+                        </h2>
+                    </div>
+                    <div class="relative flex-1 min-h-[240px] flex items-center justify-center">
+                        <canvas id="portfolioChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Asset List & Management Section -->
+            <div class="glass-card rounded-2xl p-5 shadow-sm space-y-4">
+                
+                <!-- Table Controls (Search, Filters, Action) -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    
+                    <!-- Title & Search -->
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
+                        <h2 class="text-base font-bold text-slate-100 light:text-slate-900 whitespace-nowrap">لیست دارایی‌ها</h2>
+                        
+                        <!-- Search Box -->
+                        <div class="relative flex-1 max-w-md">
+                            <i class="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input type="text" id="searchInput" oninput="renderApp()" placeholder="جستجوی نام دارایی..." 
+                                class="w-full pl-3 pr-8 py-1.5 rounded-xl bg-slate-800/70 light:bg-slate-100 border border-slate-700 light:border-slate-300 text-xs text-slate-200 light:text-slate-800 focus:outline-none focus:border-brand-500">
+                        </div>
+                    </div>
+
+                    <!-- Filters & Add Asset -->
+                    <div class="flex items-center space-x-2 space-x-reverse overflow-x-auto">
+                        <!-- Asset Class Filter -->
+                        <select id="classFilterSelect" onchange="renderApp()" class="bg-slate-800/80 light:bg-slate-100 border border-slate-700 light:border-slate-300 rounded-xl px-3 py-1.5 text-xs text-slate-200 light:text-slate-800 focus:outline-none focus:border-brand-500">
+                            <option value="all">همه کلاس‌های دارایی</option>
+                            <option value="stocks">سهام</option>
+                            <option value="crypto">ارز دیجیتال</option>
+                            <option value="gold">طلا و سکه</option>
+                            <option value="forex">ارز (دلار/یورو)</option>
+                            <option value="real_estate">مسکن و ملک</option>
+                            <option value="cash">سپرده و نقد</option>
+                        </select>
+
+                        <!-- Add Asset Button -->
+                        <button onclick="openAssetModal()" class="bg-brand-600 hover:bg-brand-500 text-white text-xs px-3 py-1.5 rounded-xl flex items-center space-x-1 space-x-reverse shadow-sm transition-all whitespace-nowrap">
+                            <i class="fa-solid fa-plus text-[10px]"></i>
+                            <span>افزودن دارایی</span>
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Responsive Table Wrapper -->
+                <div class="overflow-x-auto rounded-xl border border-slate-800 light:border-slate-200">
+                    <table class="w-full text-right text-xs">
+                        <thead class="bg-slate-800/80 light:bg-slate-200 text-slate-300 light:text-slate-700 font-semibold uppercase">
+                            <tr>
+                                <th class="py-3 px-4">نام دارایی</th>
+                                <th class="py-3 px-4">کلاس دارایی</th>
+                                <th class="py-3 px-4">پورتفو</th>
+                                <th class="py-3 px-4">تعداد / مقدار</th>
+                                <th class="py-3 px-4">قیمت خرید (واحد)</th>
+                                <th class="py-3 px-4">قیمت روز (واحد)</th>
+                                <th class="py-3 px-4">ارزش کل (تومان)</th>
+                                <th class="py-3 px-4">سود / زیان</th>
+                                <th class="py-3 px-4 text-center">عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assetTableBody" class="divide-y divide-slate-800 light:divide-slate-200 text-slate-300 light:text-slate-700">
+                            <!-- Dynamic Table Content -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State Message -->
+                <div id="emptyState" class="hidden py-12 text-center space-y-3">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 light:bg-slate-200 text-slate-400 flex items-center justify-center mx-auto">
+                        <i class="fa-solid fa-box-open text-xl"></i>
+                    </div>
+                    <p class="text-sm text-slate-400 light:text-slate-500">هیچ دارایی مطابق با فیلترهای انتخابی یافت نشد.</p>
+                </div>
+
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="border-t border-slate-800/80 light:border-slate-200 py-4 text-center text-xs text-slate-500">
+            <p>اپلیکیشن مدیریت دارایی **تراز** &copy; ۱۴۰۳ - طراحی ویژه مدیریت مالی شخصی</p>
+        </footer>
+
+    </div>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- Modal 1: Add / Edit Asset Modal -->
+    <div id="assetModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass-card bg-slate-900 light:bg-white rounded-2xl border border-slate-700 light:border-slate-300 w-full max-w-lg overflow-hidden shadow-2xl animate-fade-in">
+            
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-4 border-b border-slate-800 light:border-slate-200">
+                <h3 class="text-base font-bold text-slate-100 light:text-slate-900 flex items-center space-x-2 space-x-reverse" id="assetModalTitle">
+                    <i class="fa-solid fa-plus-circle text-brand-400"></i>
+                    <span>افزودن دارایی جدید</span>
+                </h3>
+                <button onclick="closeAssetModal()" class="text-slate-400 hover:text-slate-200 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-800">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="assetForm" onsubmit="handleAssetSubmit(event)" class="p-5 space-y-4">
+                <input type="hidden" id="assetId">
+
+                <!-- Asset Name & Category Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 light:text-slate-700 mb-1">نام دارایی *</label>
+                        <input type="text" id="assetName" required placeholder="مثلاً: سکه امامی، بیت‌کوین، فولاد" 
+                            class="w-full px-3 py-2 rounded-xl bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-300 text-xs text-slate-100 light:text-slate-900 focus:outline-none focus:border-brand-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 light:text-slate-700 mb-1">کلاس دارایی *</label>
+                        <select id="assetCategory" required class="w-full px-3 py-2 rounded-xl bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-300 text-xs text-slate-100 light:text-slate-900 focus:outline-none focus:border-brand-500">
+                            <option value="stocks">سهام (بورس/خارجی)</option>
+                            <option value="crypto">ارز دیجیتال (Crypto)</option>
+                            <option value="gold">طلا و سکه</option>
+                            <option value="forex">ارز (دلار/یورو)</option>
+                            <option value="real_estate">مسکن و ملک</option>
+                            <option value="cash">سپرده و نقد</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Portfolio & Currency Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 light:text-slate-700 mb-1">پورتفوی مربوطه *</label>
+                        <select id="assetPortfolio" required class="w-full px-3 py-2 rounded-xl bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-300 text-xs text-slate-100 light:text-slate-900 focus:outline-none focus:border-brand-500">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 light:text-slate-700 mb-1">واحد پول قیمت‌گذاری *</label>
+                        <select id="assetCurrency" required class="w-full px-3 py-2 rounded-xl bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-300 text-xs text-slate-100 light:text-slate-900 focus:outline-none focus:border-brand-500">
+                            <option value="TOMAN">تومان (TMN)</option>
+                            <option value="USD">دلار آمریکا ($)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Quantity & Unit Buy Price -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 light:text-slate-700 mb-1">تعداد / مقدار *</label>
+                        <input type="number" step="any" id="assetQuantity" required placeholder="مثلاً: 10 یا 0.25" 
+                            class="w-full px-3 py-2 rounded-xl bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-300 text-xs text-slate-100 light:text-slate-900 focus:outline-none focus:border-brand-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 light:text-slate-700 mb-1">قیمت خرید هر واحد *</label>
+                        <input type="number" step="any" id="assetBuyPrice" required placeholder="قیمت خرید به واحد انتخاب شده" 
+                            class="w-full px-3 py-2 rounded-xl bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-300 text-xs text-slate-100 light:text-slate-900 focus:outline-none focus:border-brand-500">
+                    </div>
+                </div>
+
+                <!-- Unit Current Price & Notes -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 light:text-slate-700 mb-1">قیمت روز هر واحد *</label>
+                        <input type="number" step="any" id="assetCurrentPrice" required placeholder="قیمت فعلی بازار" 
+                            class="w-full px-3 py-2 rounded-xl bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-300 text-xs text-slate-100 light:text-slate-900 focus:outline-none focus:border-brand-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 light:text-slate-700 mb-1">توضیحات / یادداشت</label>
+                        <input type="text" id="assetNote" placeholder="اختیاری..." 
+                            class="w-full px-3 py-2 rounded-xl bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-300 text-xs text-slate-100 light:text-slate-900 focus:outline-none focus:border-brand-500">
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex items-center justify-end space-x-2 space-x-reverse pt-4 border-t border-slate-800 light:border-slate-200">
+                    <button type="button" onclick="closeAssetModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 light:bg-slate-200 light:hover:bg-slate-300 text-xs font-medium text-slate-300 light:text-slate-700">
+                        انصراف
+                    </button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium shadow-md shadow-brand-600/30">
+                        ذخیره دارایی
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Add Portfolio Modal -->
+    <div id="portfolioModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass-card bg-slate-900 light:bg-white rounded-2xl border border-slate-700 light:border-slate-300 w-full max-w-md overflow-hidden shadow-2xl">
+            
+            <div class="flex items-center justify-between p-4 border-b border-slate-800 light:border-slate-200">
+                <h3 class="text-base font-bold text-slate-100 light:text-slate-900 flex items-center space-x-2 space-x-reverse">
+                    <i class="fa-solid fa-folder-plus text-brand-400"></i>
+                    <span>تعریف پورتفوی جدید</span>
+                </h3>
+                <button onclick="closePortfolioModal()" class="text-slate-400 hover:text-slate-200 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-800">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="portfolioForm" onsubmit="handlePortfolioSubmit(event)" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 light:text-slate-700 mb-1">نام پورتفو *</label>
+                    <input type="text" id="portfolioName" required placeholder="مثلاً: پورتفوی ریسکی، سرمایه‌گذاری مسکن" 
+                        class="w-full px-3 py-2 rounded-xl bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-300 text-xs text-slate-100 light:text-slate-900 focus:outline-none focus:border-brand-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 light:text-slate-700 mb-1">رنگ تم پورتفو</label>
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <input type="color" id="portfolioColor" value="#3b82f6" class="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0">
+                        <span class="text-xs text-slate-400">یک رنگ برای نمایش در نمودارها انتخاب کنید.</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end space-x-2 space-x-reverse pt-4 border-t border-slate-800 light:border-slate-200">
+                    <button type="button" onclick="closePortfolioModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 light:bg-slate-200 text-xs font-medium text-slate-300">
+                        انصراف
+                    </button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium shadow-md">
+                        ایجاد پورتفو
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- Modal 3: USD Exchange Rate Settings Modal -->
+    <div id="exchangeRateModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass-card bg-slate-900 light:bg-white rounded-2xl border border-slate-700 light:border-slate-300 w-full max-w-sm overflow-hidden shadow-2xl">
+            
+            <div class="flex items-center justify-between p-4 border-b border-slate-800 light:border-slate-200">
+                <h3 class="text-base font-bold text-slate-100 light:text-slate-900 flex items-center space-x-2 space-x-reverse">
+                    <i class="fa-solid fa-dollar-sign text-emerald-400"></i>
+                    <span>تنظیم نرخ تبدیل دلار</span>
+                </h3>
+                <button onclick="closeExchangeRateModal()" class="text-slate-400 hover:text-slate-200 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-800">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4">
+                <p class="text-xs text-slate-400 light:text-slate-600">
+                    دارایی‌هایی که قیمت آن‌ها به دلار ثبت شده است، با این نرخ تبدیل به تومان محاسبه شده و در ارزش کل نمایش داده می‌شوند.
+                </p>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 light:text-slate-700 mb-1">قیمت هر دلار (به تومان) *</label>
+                    <input type="number" id="usdToTomanInput" required placeholder="۷۰,۰۰۰" 
+                        class="w-full px-3 py-2 rounded-xl bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-300 text-sm font-bold text-slate-100 light:text-slate-900 focus:outline-none focus:border-brand-500">
+                </div>
+
+                <div class="flex items-center justify-end space-x-2 space-x-reverse pt-2">
+                    <button type="button" onclick="closeExchangeRateModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-medium text-slate-300">
+                        انصراف
+                    </button>
+                    <button type="button" onclick="saveUsdRate()" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium shadow-md">
+                        ثبت و به‌روزرسانی
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 left-5 z-50 space-y-2 pointer-events-none"></div>
+
+    <!-- Application Script -->
+    <script>
+        // ================= STATE MANAGEMENT =================
+        const LOCAL_STORAGE_KEY = 'taraz_app_state_v1';
+
+        // Pre-loaded realistic demo data for Iranian context
+        const initialDemoState = {
+            usdToTomanRate: 70000,
+            activePortfolioId: 'all',
+            portfolios: [
+                { id: 'p_default', name: 'پورتفوی عمومی', color: '#0ea5e9' },
+                { id: 'p_longterm', name: 'سرمایه‌گذاری بلندمدت', color: '#10b981' },
+                { id: 'p_crypto', name: 'پورتفوی کریپتو و ریسکی', color: '#f59e0b' }
+            ],
+            assets: [
+                {
+                    id: 'ast_1',
+                    name: 'سکه امامی طرح جدید',
+                    category: 'gold',
+                    portfolioId: 'p_default',
+                    quantity: 5,
+                    buyPrice: 42000000,
+                    currentPrice: 48500000,
+                    currency: 'TOMAN',
+                    note: 'خرید از صرافی خرداد'
+                },
+                {
+                    id: 'ast_2',
+                    name: 'بیت‌کوین (Bitcoin)',
+                    category: 'crypto',
+                    portfolioId: 'p_crypto',
+                    quantity: 0.12,
+                    buyPrice: 62000,
+                    currentPrice: 89500,
+                    currency: 'USD',
+                    note: 'کیف پول سخت‌افزاری'
+                },
+                {
+                    id: 'ast_3',
+                    name: 'فولاد مبارکه اصفهان (فولاد)',
+                    category: 'stocks',
+                    portfolioId: 'p_longterm',
+                    quantity: 45000,
+                    buyPrice: 480,
+                    currentPrice: 560,
+                    currency: 'TOMAN',
+                    note: 'سهام بنیادی بورس'
+                },
+                {
+                    id: 'ast_4',
+                    name: 'اسکناس دلار آمریکا',
+                    category: 'forex',
+                    portfolioId: 'p_default',
+                    quantity: 2500,
+                    buyPrice: 62500,
+                    currentPrice: 70000,
+                    currency: 'TOMAN',
+                    note: 'پس‌انداز ارزی'
+                },
+                {
+                    id: 'ast_5',
+                    name: 'آپارتمان ۸۵ متری (تهرانپارس)',
+                    category: 'real_estate',
+                    portfolioId: 'p_longterm',
+                    quantity: 1,
+                    buyPrice: 4800000000,
+                    currentPrice: 5600000000,
+                    currency: 'TOMAN',
+                    note: 'سرمایه‌گذاری ملکی'
+                },
+                {
+                    id: 'ast_6',
+                    name: 'سپرده ۱ ساله بانک پاسارگاد',
+                    category: 'cash',
+                    portfolioId: 'p_default',
+                    quantity: 1,
+                    buyPrice: 300000000,
+                    currentPrice: 300000000,
+                    currency: 'TOMAN',
+                    note: 'سود ۲۲.۵ درصد سالانه'
+                }
+            ]
+        };
+
+        let state = loadState();
+
+        // Asset Category Configurations
+        const CATEGORIES = {
+            stocks: { name: 'سهام', icon: 'fa-chart-line', color: '#3b82f6' },
+            crypto: { name: 'ارز دیجیتال', icon: 'fa-coins', color: '#f59e0b' },
+            gold: { name: 'طلا و سکه', icon: 'fa-gem', color: '#eab308' },
+            forex: { name: 'ارز (دلار/یورو)', icon: 'fa-money-bill-wave', color: '#10b981' },
+            real_estate: { name: 'مسکن و ملک', icon: 'fa-city', color: '#8b5cf6' },
+            cash: { name: 'سپرده و نقد', icon: 'fa-piggy-bank', color: '#06b6d4' }
+        };
+
+        // Chart References
+        let allocationChartInstance = null;
+        let portfolioChartInstance = null;
+
+        // ================= HELPERS & UTILS =================
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+                return saved ? JSON.parse(saved) : initialDemoState;
+            } catch (e) {
+                console.error('Failed to load state from localStorage', e);
+                return initialDemoState;
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.error('Failed to save state to localStorage', e);
+            }
+        }
+
+        function formatNumber(num) {
+            if (num === null || num === undefined || isNaN(num)) return '۰';
+            return new Intl.NumberFormat('fa-IR').format(num);
+        }
+
+        function formatCurrency(amount, currency = 'TOMAN') {
+            const formatted = formatNumber(Math.round(amount));
+            return currency === 'USD' ? `$ ${formatted}` : `${formatted} تومان`;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium flex items-center space-x-2 space-x-reverse transition-all duration-300 transform translate-y-2 ${
+                type === 'success' 
+                    ? 'bg-emerald-600 text-white' 
+                    : 'bg-rose-600 text-white'
+            }`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i><span>${message}</span>`;
+            
+            const container = document.getElementById('toastContainer');
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function getAssetTomanValue(asset, isBuy = false) {
+            const unitPrice = isBuy ? asset.buyPrice : asset.currentPrice;
+            const totalInOriginalCurrency = asset.quantity * unitPrice;
+            if (asset.currency === 'USD') {
+                return totalInOriginalCurrency * state.usdToTomanRate;
+            }
+            return totalInOriginalCurrency;
+        }
+
+        // ================= APP RENDERING =================
+
+        function renderApp() {
+            renderHeader();
+            renderPortfolioTabs();
+            renderMetrics();
+            renderTable();
+            renderCharts();
+        }
+
+        function renderHeader() {
+            document.getElementById('usdRateBadge').innerText = `${formatNumber(state.usdToTomanRate)} تومان`;
+        }
+
+        function renderPortfolioTabs() {
+            const container = document.getElementById('portfolioTabsContainer');
+            container.innerHTML = '';
+
+            // 'All Portfolios' Tab
+            const allBtn = document.createElement('button');
+            const isAllActive = state.activePortfolioId === 'all';
+            allBtn.className = `px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                isAllActive 
+                    ? 'bg-brand-600 text-white shadow-md shadow-brand-600/30' 
+                    : 'bg-slate-800/60 light:bg-slate-100 text-slate-300 light:text-slate-700 hover:bg-slate-800'
+            }`;
+            allBtn.innerText = 'همه پورتفوها';
+            allBtn.onclick = () => {
+                state.activePortfolioId = 'all';
+                saveState();
+                renderApp();
+            };
+            container.appendChild(allBtn);
+
+            // Individual Portfolio Pills
+            state.portfolios.forEach(p => {
+                const btn = document.createElement('button');
+                const isActive = state.activePortfolioId === p.id;
+                btn.className = `px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap flex items-center space-x-1.5 space-x-reverse transition-all ${
+                    isActive 
+                        ? 'bg-brand-600 text-white shadow-md shadow-brand-600/30' 
+                        : 'bg-slate-800/60 light:bg-slate-100 text-slate-300 light:text-slate-700 hover:bg-slate-800'
+                }`;
+                btn.innerHTML = `
+                    <span class="w-2 h-2 rounded-full" style="background-color: ${p.color}"></span>
+                    <span>${p.name}</span>
+                `;
+                btn.onclick = () => {
+                    state.activePortfolioId = p.id;
+                    saveState();
+                    renderApp();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function getFilteredAssets() {
+            const search = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+            const categoryFilter = document.getElementById('classFilterSelect')?.value || 'all';
+
+            return state.assets.filter(a => {
+                const matchesPortfolio = state.activePortfolioId === 'all' || a.portfolioId === state.activePortfolioId;
+                const matchesCategory = categoryFilter === 'all' || a.category === categoryFilter;
+                const matchesSearch = a.name.toLowerCase().includes(search);
+                return matchesPortfolio && matchesCategory && matchesSearch;
+            });
+        }
+
+        function renderMetrics() {
+            const filteredAssets = getFilteredAssets();
+
+            let totalWorthToman = 0;
+            let totalBuyToman = 0;
+
+            let topAsset = null;
+            let topReturn = -Infinity;
+
+            filteredAssets.forEach(a => {
+                const currentToman = getAssetTomanValue(a, false);
+                const buyToman = getAssetTomanValue(a, true);
+
+                totalWorthToman += currentToman;
+                totalBuyToman += buyToman;
+
+                const pnl = currentToman - buyToman;
+                const returnPct = buyToman > 0 ? (pnl / buyToman) * 100 : 0;
+
+                if (returnPct > topReturn) {
+                    topReturn = returnPct;
+                    topAsset = a;
+                }
+            });
+
+            const totalPnL = totalWorthToman - totalBuyToman;
+            const totalPnLPct = totalBuyToman > 0 ? (totalPnL / totalBuyToman) * 100 : 0;
+
+            // Render Stat 1: Total Net Worth
+            document.getElementById('statTotalNetWorth').innerHTML = `
+                ${formatNumber(Math.round(totalWorthToman))} <span class="text-xs font-normal text-slate-400">تومان</span>
+            `;
+
+            // Render Stat 2: Total P&L
+            const statTotalPnLEl = document.getElementById('statTotalPnL');
+            const pnlBadgeEl = document.getElementById('statPnLBadge');
+            const pnlIconBg = document.getElementById('pnlIconBg');
+            const pnlIcon = document.getElementById('pnlIcon');
+
+            const isProfit = totalPnL >= 0;
+            statTotalPnLEl.innerHTML = `
+                <span class="${isProfit ? 'text-emerald-400' : 'text-rose-400'}">${formatNumber(Math.round(totalPnL))}</span>
+                <span class="text-xs font-normal text-slate-400">تومان</span>
+            `;
+
+            pnlBadgeEl.className = `inline-flex items-center space-x-1 space-x-reverse px-2 py-0.5 rounded-md text-xs font-bold ${
+                isProfit ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
+            }`;
+            pnlBadgeEl.innerHTML = `
+                <i class="fa-solid ${isProfit ? 'fa-arrow-up' : 'fa-arrow-down'} text-[10px]"></i>
+                <span>${formatNumber(totalPnLPct.toFixed(1))}%</span>
+            `;
+
+            pnlIconBg.className = `w-8 h-8 rounded-xl flex items-center justify-center ${
+                isProfit ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
+            }`;
+            pnlIcon.className = `fa-solid ${isProfit ? 'fa-chart-line' : 'fa-chart-line-down'}`;
+
+            // Render Stat 3: Top Performer
+            if (topAsset && topReturn !== -Infinity) {
+                document.getElementById('statTopAssetName').innerText = topAsset.name;
+                document.getElementById('statTopAssetReturn').innerHTML = `
+                    <span>بازدهی:</span>
+                    <span class="${topReturn >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-bold">
+                        ${topReturn >= 0 ? '+' : ''}${formatNumber(topReturn.toFixed(1))}%
+                    </span>
+                `;
+            } else {
+                document.getElementById('statTopAssetName').innerText = '—';
+                document.getElementById('statTopAssetReturn').innerHTML = `<span>بازدهی:</span><span>—</span>`;
+            }
+
+            // Render Stat 4: Counts
+            document.getElementById('statAssetCount').innerText = formatNumber(filteredAssets.length);
+            document.getElementById('statPortfolioCount').innerText = formatNumber(state.portfolios.length);
+        }
+
+        function renderTable() {
+            const filteredAssets = getFilteredAssets();
+            const tbody = document.getElementById('assetTableBody');
+            const emptyState = document.getElementById('emptyState');
+
+            tbody.innerHTML = '';
+
+            if (filteredAssets.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            filteredAssets.forEach(a => {
+                const categoryObj = CATEGORIES[a.category] || { name: a.category, icon: 'fa-box', color: '#94a3b8' };
+                const portfolioObj = state.portfolios.find(p => p.id === a.portfolioId) || { name: 'عمومی', color: '#0ea5e9' };
+
+                const currentToman = getAssetTomanValue(a, false);
+                const buyToman = getAssetTomanValue(a, true);
+                const pnlToman = currentToman - buyToman;
+                const pnlPct = buyToman > 0 ? (pnlToman / buyToman) * 100 : 0;
+                const isProfit = pnlToman >= 0;
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 light:hover:bg-slate-50 transition-colors border-b border-slate-800/50 light:border-slate-200';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-bold text-slate-100 light:text-slate-900">
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs" style="background-color: ${categoryObj.color}20; color: ${categoryObj.color}">
+                                <i class="fa-solid ${categoryObj.icon}"></i>
+                            </span>
+                            <div>
+                                <div>${a.name}</div>
+                                ${a.note ? `<div class="text-[10px] text-slate-400 font-normal">${a.note}</div>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 rounded-md text-[11px] font-medium" style="background-color: ${categoryObj.color}15; color: ${categoryObj.color}">
+                            ${categoryObj.name}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="flex items-center space-x-1.5 space-x-reverse text-xs">
+                            <span class="w-2 h-2 rounded-full" style="background-color: ${portfolioObj.color}"></span>
+                            <span>${portfolioObj.name}</span>
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 dir-ltr text-right font-medium">${formatNumber(a.quantity)}</td>
+                    <td class="py-3 px-4 font-medium">${formatCurrency(a.buyPrice, a.currency)}</td>
+                    <td class="py-3 px-4 font-medium">${formatCurrency(a.currentPrice, a.currency)}</td>
+                    <td class="py-3 px-4 font-bold text-slate-100 light:text-slate-900">${formatNumber(Math.round(currentToman))}</td>
+                    <td class="py-3 px-4">
+                        <div class="${isProfit ? 'text-emerald-400' : 'text-rose-400'} font-bold">
+                            ${formatNumber(Math.round(pnlToman))}
+                        </div>
+                        <div class="text-[10px] ${isProfit ? 'text-emerald-500' : 'text-rose-500'} font-semibold">
+                            ${isProfit ? '+' : ''}${formatNumber(pnlPct.toFixed(1))}%
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="flex items-center justify-center space-x-1 space-x-reverse">
+                            <button onclick="openAssetModal('${a.id}')" class="w-7 h-7 rounded-lg text-slate-400 hover:text-brand-400 hover:bg-slate-800 transition-colors">
+                                <i class="fa-solid fa-pen-to-square text-xs"></i>
+                            </button>
+                            <button onclick="deleteAsset('${a.id}')" class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ================= CHARTS =================
+
+        function renderCharts() {
+            const filteredAssets = getFilteredAssets();
+
+            // 1. Asset Allocation Donut Chart Data
+            const categorySums = {};
+            Object.keys(CATEGORIES).forEach(cat => categorySums[cat] = 0);
+
+            filteredAssets.forEach(a => {
+                const worth = getAssetTomanValue(a, false);
+                categorySums[a.category] = (categorySums[a.category] || 0) + worth;
+            });
+
+            const donutLabels = [];
+            const donutData = [];
+            const donutColors = [];
+
+            Object.keys(CATEGORIES).forEach(cat => {
+                if (categorySums[cat] > 0) {
+                    donutLabels.push(CATEGORIES[cat].name);
+                    donutData.push(categorySums[cat]);
+                    donutColors.push(CATEGORIES[cat].color);
+                }
+            });
+
+            // Destroy existing Donut Chart
+            if (allocationChartInstance) allocationChartInstance.destroy();
+
+            const donutCtx = document.getElementById('allocationChart').getContext('2d');
+            allocationChartInstance = new Chart(donutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: donutLabels,
+                    datasets: [{
+                        data: donutData,
+                        backgroundColor: donutColors,
+                        borderWidth: 2,
+                        borderColor: '#0f172a'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { family: 'Vazirmatn', size: 11 },
+                                color: document.documentElement.classList.contains('dark') ? '#cbd5e1' : '#334155'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const val = context.raw || 0;
+                                    return `${context.label}: ${formatNumber(Math.round(val))} تومان`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '68%'
+                }
+            });
+
+            // 2. Portfolio Bar Chart Data
+            const portfolioNames = [];
+            const portfolioValues = [];
+            const portfolioPnLs = [];
+            const portfolioColors = [];
+
+            state.portfolios.forEach(p => {
+                const pAssets = state.assets.filter(a => a.portfolioId === p.id);
+                let pWorth = 0;
+                let pBuy = 0;
+
+                pAssets.forEach(a => {
+                    pWorth += getAssetTomanValue(a, false);
+                    pBuy += getAssetTomanValue(a, true);
+                });
+
+                portfolioNames.push(p.name);
+                portfolioValues.push(pWorth);
+                portfolioPnLs.push(pWorth - pBuy);
+                portfolioColors.push(p.color);
+            });
+
+            if (portfolioChartInstance) portfolioChartInstance.destroy();
+
+            const barCtx = document.getElementById('portfolioChart').getContext('2d');
+            portfolioChartInstance = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: portfolioNames,
+                    datasets: [
+                        {
+                            label: 'ارزش کل (تومان)',
+                            data: portfolioValues,
+                            backgroundColor: '#0ea5e9',
+                            borderRadius: 8
+                        },
+                        {
+                            label: 'سود/زیان (تومان)',
+                            data: portfolioPnLs,
+                            backgroundColor: portfolioPnLs.map(v => v >= 0 ? '#10b981' : '#f43f5e'),
+                            borderRadius: 8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: { family: 'Vazirmatn', size: 11 },
+                                color: document.documentElement.classList.contains('dark') ? '#cbd5e1' : '#334155'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${formatNumber(Math.round(context.raw))} تومان`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b',
+                                font: { family: 'Vazirmatn', size: 10 }
+                            },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: {
+                                color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b',
+                                font: { family: 'Vazirmatn', size: 10 },
+                                callback: function(value) {
+                                    return formatNumber(value / 1000000) + ' م';
+                                }
+                            },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ================= ASSET MODAL & CRUD =================
+
+        function openAssetModal(assetId = null) {
+            populatePortfolioSelect();
+            const modal = document.getElementById('assetModal');
+            const form = document.getElementById('assetForm');
+            const title = document.getElementById('assetModalTitle');
+
+            if (assetId) {
+                const asset = state.assets.find(a => a.id === assetId);
+                if (!asset) return;
+
+                title.innerHTML = `<i class="fa-solid fa-pen-to-square text-brand-400"></i><span>ویرایش دارایی</span>`;
+                document.getElementById('assetId').value = asset.id;
+                document.getElementById('assetName').value = asset.name;
+                document.getElementById('assetCategory').value = asset.category;
+                document.getElementById('assetPortfolio').value = asset.portfolioId;
+                document.getElementById('assetCurrency').value = asset.currency;
+                document.getElementById('assetQuantity').value = asset.quantity;
+                document.getElementById('assetBuyPrice').value = asset.buyPrice;
+                document.getElementById('assetCurrentPrice').value = asset.currentPrice;
+                document.getElementById('assetNote').value = asset.note || '';
+            } else {
+                title.innerHTML = `<i class="fa-solid fa-plus-circle text-brand-400"></i><span>افزودن دارایی جدید</span>`;
+                form.reset();
+                document.getElementById('assetId').value = '';
+                if (state.activePortfolioId !== 'all') {
+                    document.getElementById('assetPortfolio').value = state.activePortfolioId;
+                }
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeAssetModal() {
+            document.getElementById('assetModal').classList.add('hidden');
+        }
+
+        function populatePortfolioSelect() {
+            const select = document.getElementById('assetPortfolio');
+            select.innerHTML = '';
+            state.portfolios.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.innerText = p.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function handleAssetSubmit(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('assetId').value;
+            const name = document.getElementById('assetName').value.trim();
+            const category = document.getElementById('assetCategory').value;
+            const portfolioId = document.getElementById('assetPortfolio').value;
+            const currency = document.getElementById('assetCurrency').value;
+            const quantity = parseFloat(document.getElementById('assetQuantity').value);
+            const buyPrice = parseFloat(document.getElementById('assetBuyPrice').value);
+            const currentPrice = parseFloat(document.getElementById('assetCurrentPrice').value);
+            const note = document.getElementById('assetNote').value.trim();
+
+            if (!name || isNaN(quantity) || isNaN(buyPrice) || isNaN(currentPrice)) {
+                showToast('لطفا اطلاعات ورودی را به درستی وارد کنید.', 'error');
+                return;
+            }
+
+            if (id) {
+                // Edit existing
+                const index = state.assets.findIndex(a => a.id === id);
+                if (index !== -1) {
+                    state.assets[index] = { id, name, category, portfolioId, currency, quantity, buyPrice, currentPrice, note };
+                    showToast('دارایی با موفقیت بروزرسانی شد.');
+                }
+            } else {
+                // Add new asset
+                const newAsset = {
+                    id: 'ast_' + Date.now(),
+                    name,
+                    category,
+                    portfolioId,
+                    currency,
+                    quantity,
+                    buyPrice,
+                    currentPrice,
+                    note
+                };
+                state.assets.push(newAsset);
+                showToast('دارایی جدید با موفقیت اضافه شد.');
+            }
+
+            saveState();
+            closeAssetModal();
+            renderApp();
+        }
+
+        function deleteAsset(assetId) {
+            if (confirm('آیا از حذف این دارایی اطمینان دارید؟')) {
+                state.assets = state.assets.filter(a => a.id !== assetId);
+                saveState();
+                renderApp();
+                showToast('دارایی با موفقیت حذف شد.');
+            }
+        }
+
+        // ================= PORTFOLIO MODAL & CRUD =================
+
+        function openPortfolioModal() {
+            document.getElementById('portfolioForm').reset();
+            document.getElementById('portfolioModal').classList.remove('hidden');
+        }
+
+        function closePortfolioModal() {
+            document.getElementById('portfolioModal').classList.add('hidden');
+        }
+
+        function handlePortfolioSubmit(event) {
+            event.preventDefault();
+            const name = document.getElementById('portfolioName').value.trim();
+            const color = document.getElementById('portfolioColor').value;
+
+            if (!name) return;
+
+            const newPortfolio = {
+                id: 'p_' + Date.now(),
+                name,
+                color
+            };
+
+            state.portfolios.push(newPortfolio);
+            state.activePortfolioId = newPortfolio.id;
+
+            saveState();
+            closePortfolioModal();
+            renderApp();
+            showToast(`پورتفوی «${name}» با موفقیت ایجاد شد.`);
+        }
+
+        // ================= EXCHANGE RATE MODAL =================
+
+        function openExchangeRateModal() {
+            document.getElementById('usdToTomanInput').value = state.usdToTomanRate;
+            document.getElementById('exchangeRateModal').classList.remove('hidden');
+        }
+
+        function closeExchangeRateModal() {
+            document.getElementById('exchangeRateModal').classList.add('hidden');
+        }
+
+        function saveUsdRate() {
+            const val = parseFloat(document.getElementById('usdToTomanInput').value);
+            if (isNaN(val) || val <= 0) {
+                showToast('لطفاً نرخ معتبر دلار را وارد کنید.', 'error');
+                return;
+            }
+
+            state.usdToTomanRate = val;
+            saveState();
+            closeExchangeRateModal();
+            renderApp();
+            showToast('نرخ تبدیل دلار به‌روزرسانی شد.');
+        }
+
+        // ================= THEME TOGGLE =================
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                themeIcon.className = 'fa-solid fa-sun text-amber-500';
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                themeIcon.className = 'fa-solid fa-moon';
+            }
+            renderCharts();
+        }
+
+        // Initialize App on DOM Load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderApp();
+        });
+    </script>
+</body>
+</html>
